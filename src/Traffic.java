@@ -27,6 +27,10 @@ public class Traffic extends PApplet {
 
 	public void draw () {
 		if ( !paused_ || step_ ) {
+//			if (world_.getStartTime() == -1) {
+//				System.out.println("time set");
+//				world_.setStartTime(world_.getCurrentTimeMS());
+//			}
 			background(50); // clear background
 
 			// draw the world
@@ -42,6 +46,9 @@ public class Traffic extends PApplet {
 	public void keyPressed () {
 		if ( key == 'p' ) {
 			paused_ = !paused_;
+			if (paused_) {
+				
+			}
 		} else if ( key == 's' ) {
 			paused_ = true;
 			step_ = true;
@@ -104,14 +111,16 @@ public class Traffic extends PApplet {
 		world_.addRoad(road);
 
 		// one smart car
+		SmartCarBrain brain = null;
+		Car smartCar = null;
 		{
-			SmartCarBrain brain = new SmartCarBrain();
+			brain = new SmartCarBrain();
 			brain.setGoal(new Goal(road.getEnd(2),15));
-			Car car =
+			smartCar =
 			    new Car(world_,color(255,255,0),10,20,1,road.getAlong(road.getStart(2),10),
 			            new PVector(0,0),4f,.05f,1f,40,PApplet.radians(135),brain);
-			car.setRoad(road);
-			world_.addCar(car);
+			smartCar.setRoad(road);
+			world_.addCar(smartCar);
 		}
 
 		// 20 randomly-placed other cars
@@ -131,6 +140,11 @@ public class Traffic extends PApplet {
 			car.setRoad(road);
 			world_.addCar(car);
 		}
+		
+		/*
+		 * initialize the DynamicPathfinderGraph inside of SmartCarBrain
+		 */
+		brain.initGraph(world_,smartCar);
 
 		// so something is visible when it starts off paused
 		background(50);

@@ -7,3 +7,5 @@ of where other cars will be in a time step.
 -DynamicPathfinderGraph is placed as a private instance variable in SmartCarBrain, as SmartCarBrain
 will really be the only class using the graph. Our brain will be the one making decisions, so 
 it makes sense for it to have direct access to the graph. Other classes don't care about the graph
+
+
