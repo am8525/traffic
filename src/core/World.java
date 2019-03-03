@@ -23,9 +23,7 @@ public class World {
 	private List<Car> cars_;
 	private List<Road> roads_;
 	
-	//clock and time tracking vars.
-//	private Clock clock_;
-//	private long start_; //start time
+	private long start_; //start time of the graph traversal
 
 	
 	public static final int DEBUG_NONE = 0, DEBUG_CAR = 4, DEBUG_GRAPHGEN = 1,
@@ -44,8 +42,7 @@ public class World {
 		cars_ = new ArrayList<Car>();
 		roads_ = new ArrayList<Road>();
 		
-		//clock_ = Clock.systemDefaultZone();
-		//start_ = -1;
+		start_ = -1;
 		
 		debug_ = DEBUG_NONE;
 	}
@@ -402,32 +399,23 @@ public class World {
 		applet_.ellipseMode(PApplet.CENTER);
 		applet_.ellipse(pos.x,pos.y,radius * 2,radius * 2);
 	}
+
+	/**
+	 * Used to set the start time of a simulation.
+	 * @param start
+	 * 			start time, long
+	 */
+	public void setStartTime(long start) {
+		start_ = start;
+	}
 	
-//	/**
-//	 * Gets the current time of our simulation clock.
-//	 * @return
-//	 * 		current time as a long.
-//	 */
-//	public long getCurrentTimeMS() {
-//		return clock_.millis();
-//	}
-//	
-//	/**
-//	 * Used to set the start time of a simulation.
-//	 * @param start
-//	 * 			start time, long
-//	 */
-//	public void setStartTime(long start) {
-//		start_ = start;
-//	}
-//	
-//	/**
-//	 * Returns the simulation start time.
-//	 * @return
-//	 * 		start time of the simulation.
-//	 */
-//	public long getStartTime() {
-//		return start_;
-//	}
+	/**
+	 * Returns the simulation start time.
+	 * @return
+	 * 		start time of the simulation.
+	 */
+	public long getStartTime() {
+		return start_;
+	}
 
 }

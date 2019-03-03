@@ -1,6 +1,5 @@
 package brain;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.PriorityQueue;
 
@@ -8,6 +7,7 @@ import core.Brain;
 import core.Car;
 import core.Goal;
 import core.World;
+import pathfinding.CostNode;
 import pathfinding.DynamicPathfinderGraph;
 import pathfinding.RoadGraphNode;
 import processing.core.PApplet;
@@ -38,11 +38,11 @@ public class SmartCarBrain implements Brain {
 	 * 	how far our heuristic tells us this node is from the goal.
 	 *  
 	 */
-	private PriorityQueue<RoadGraphNode> pq_; //PQ for A*
+	private PriorityQueue<CostNode> pq_; //PQ for A*
 
 	public SmartCarBrain () {
 		goal_ = null;
-
+		pq_ = new PriorityQueue<CostNode>();
 	}
 
 	public PVector getNetSteeringForce ( Car car, World world ) {
@@ -51,11 +51,34 @@ public class SmartCarBrain implements Brain {
 		
 		/*
 		 * 1. getNextLocations from our graph
+		 * 
+		 * 2. for each node:
+		 * 		-compute elapsed time thus far.
+		 * 		-heuristically compute time it would take to get to the node.
+		 * 		-heuristically compute time it would take to get from that node to the goal.
+		 * 		
+		 * 		-construct a CostNode, and add it to our priority queue.
+		 * 
 		 */
+		long elapsed = System.nanoTime() - world.getStartTime();
 		for (RoadGraphNode node: graph_.getNextLocations(new RoadGraphNode(car.getRoad(),
 		                                                         car.getCenter(),System.nanoTime()))) {
 			
+			long etaNode = (long) ((PVector.sub(car.getCenter(),node.getPosition()).mag()) / car.getMaxSpeed());		
+			long etaGoal = (long) ((PVector.sub(goal_.getPoint(),node.getPosition()).mag()) / car.getMaxSpeed());			
+			long total = elapsed + etaNode + etaGoal;
+			pq_.add(new CostNode(node,total));
 		}
+		/*
+		 * once we've added all the next potential locations,
+		 * we know they're ordered by cost. We take the head 
+		 * of the list as our best option, cost-wise.
+		 */ 
+		
+		
+		 /* TODO: implement a decision-making procedure 
+		 * to pick a node, and return a force directed toward it.
+		 */
 		return new PVector(0,0);
 	}
 	

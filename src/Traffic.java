@@ -27,10 +27,10 @@ public class Traffic extends PApplet {
 
 	public void draw () {
 		if ( !paused_ || step_ ) {
-//			if (world_.getStartTime() == -1) {
-//				System.out.println("time set");
-//				world_.setStartTime(world_.getCurrentTimeMS());
-//			}
+			if (world_.getStartTime() == -1) { //setting the start time
+				System.out.println("time set");
+				world_.setStartTime(System.nanoTime());
+			}
 			background(50); // clear background
 
 			// draw the world
