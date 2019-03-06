@@ -3,6 +3,7 @@ package brain;
 import java.util.List;
 import java.util.PriorityQueue;
 
+import behavior.Brake;
 import core.Brain;
 import core.Car;
 import core.Goal;
@@ -38,7 +39,7 @@ public class SmartCarBrain implements Brain {
 	 * 	how far our heuristic tells us this node is from the goal.
 	 *  
 	 */
-	private PriorityQueue<CostNode> pq_; //PQ for A*
+	private PriorityQueue<CostNode> pq_;  //PQ for A*
 
 	public SmartCarBrain () {
 		goal_ = null;
@@ -68,18 +69,27 @@ public class SmartCarBrain implements Brain {
 			long etaGoal = (long) ((PVector.sub(goal_.getPoint(),node.getPosition()).mag()) / car.getMaxSpeed());			
 			long total = elapsed + etaNode + etaGoal;
 			pq_.add(new CostNode(node,total));
-		}
+		}	
 		/*
 		 * once we've added all the next potential locations,
 		 * we know they're ordered by cost. We take the head 
 		 * of the list as our best option, cost-wise.
 		 */ 
 		
-		
-		 /* TODO: implement a decision-making procedure 
-		 * to pick a node, and return a force directed toward it.
-		 */
-		return new PVector(0,0);
+		//if a neighbor is determined to be in the same lane as us, we break.
+		for (Car other : world.getNeighbors(car)) {
+			if (other.getLane() == car.getLane()) { //same lane, should break.
+				System.out.println("neighbor inlane, breaking");
+				Brake brake = new Brake(100);
+				return brake.getSteeringForce(car,world);
+			}
+			else {
+				System.out.println("neighbor diff lane, not breaking");
+			}
+		}
+		//if we get here, go straight @ max speed.
+		System.out.println("Straight");
+		return new PVector(1,0);
 	}
 	
 	/**
