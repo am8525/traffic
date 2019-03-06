@@ -34,6 +34,7 @@ public class Car {
 	// current state of car's turn signal and brake lights
 	protected Signal signal_;
 	protected boolean braking_; // true if braking, false if not
+	protected int target_; //target for lane change; -1 if none.
 
 	// car's color and dimensions
 	protected int color_;
@@ -107,6 +108,7 @@ public class Car {
 
 		road_ = null;
 		signal_ = Signal.NONE;
+		target_ = -1;
 		braking_ = false;
 
 		brain_ = brain;
@@ -341,6 +343,15 @@ public class Car {
 	public Signal getSignal () {
 		return signal_;
 	}
+	
+	/**
+	 * Get the int value of the lane we're changing into
+	 * 
+	 * @return int value of the lane we're going to
+	 */
+	public int getTargetLane() {
+		return target_;
+	}
 
 	/**
 	 * Get the car's current speed. (speed = magnitude of the velocity)
@@ -483,6 +494,16 @@ public class Car {
 	 */
 	public void setSignal ( Signal signal ) {
 		signal_ = signal;
+	}
+	
+	/**
+	 * Set the target lane of the car.
+	 * 
+	 * @param target
+	 * 			new value for target_
+	 */
+	public void setTargetLane(int target) {
+		target_ = target;
 	}
 
 	/**
