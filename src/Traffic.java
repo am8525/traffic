@@ -118,7 +118,10 @@ public class Traffic extends PApplet {
 			brain.setGoal(new Goal(road.getEnd(2),15));
 			smartCar =
 			    new Car(world_,color(255,255,0),10,20,1,road.getAlong(road.getStart(2),10),
-			            new PVector(0,0),4f,.05f,1f,40,PApplet.radians(135),brain);
+			            new PVector(0,0),4f,.05f,2f,40,PApplet.radians(135),brain);
+			
+			//doubled car speed for debugging purposes
+			
 			smartCar.setRoad(road);
 			world_.addCar(smartCar);
 		}
