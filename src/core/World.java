@@ -23,9 +23,6 @@ public class World {
 	private List<Car> cars_;
 	private List<Road> roads_;
 	
-	private long start_; //start time of the graph traversal
-
-	
 	public static final int DEBUG_NONE = 0, DEBUG_CAR = 4, DEBUG_GRAPHGEN = 1,
 	    DEBUG_GRAPH = 2, DEBUG_BEHAVIOR = 8;
 	private int debug_; // debug status
@@ -41,8 +38,6 @@ public class World {
 
 		cars_ = new ArrayList<Car>();
 		roads_ = new ArrayList<Road>();
-		
-		start_ = -1;
 		
 		debug_ = DEBUG_NONE;
 	}
@@ -398,24 +393,6 @@ public class World {
 		applet_.noFill();
 		applet_.ellipseMode(PApplet.CENTER);
 		applet_.ellipse(pos.x,pos.y,radius * 2,radius * 2);
-	}
-
-	/**
-	 * Used to set the start time of a simulation.
-	 * @param start
-	 * 			start time, long
-	 */
-	public void setStartTime(long start) {
-		start_ = start;
-	}
-	
-	/**
-	 * Returns the simulation start time.
-	 * @return
-	 * 		start time of the simulation.
-	 */
-	public long getStartTime() {
-		return start_;
 	}
 
 }
