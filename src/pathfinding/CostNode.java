@@ -10,9 +10,9 @@ public class CostNode implements Comparable<CostNode> {
 	private RoadGraphNode node_; 
 	
 	//cost it takes to get to this node.
-	private long cost_;
+	private float cost_;
 	
-	public CostNode(RoadGraphNode node, long cost) {
+	public CostNode(RoadGraphNode node, float cost) {
 		node_ = node;
 		cost_ = cost;
 	}
@@ -48,7 +48,7 @@ public class CostNode implements Comparable<CostNode> {
 	 * @param cost
 	 * 			new cost to get to this node.
 	 */
-	public void setCost(long cost) {
+	public void setCost(float cost) {
 		cost_ = cost;
 	}
 	
@@ -57,7 +57,7 @@ public class CostNode implements Comparable<CostNode> {
 	 * @return
 	 * 		cost to get to this node.
 	 */
-	public long getCost() {
+	public float getCost() {
 		return cost_;
 	}
 	
