@@ -27,31 +27,28 @@ public class SmartCarBrain implements Brain {
 
 	private Goal goal_; //where we're trying to get to. Used with heuristic evaluation.
 
-	/*
-	 * need:
-	 * 	-world
-	 * 	-car for this brain
-	 * 	-goal
-	 */
 	private DynamicPathfinderGraph graph_; //to be used with A*.
 
-	private boolean pathOn_;
+	private boolean pathOn_; //flag for path debugging
+	
+	protected int target_; //target for lane change; -1 if none.
 
+	
 	/*
-	 * nodes in the PQ are prioritized by cost,
-	 * where cost is : 
-	 * 	how far we've traveled thus far
+	 * States:
+	 * 	-Braking
 	 * 
-	 *  			+
+	 *  -ChangingLanes
 	 *  
-	 * 	how far our heuristic tells us this node is from the goal.
-	 *  
+	 *  -Fwd
 	 */
+
 	private PriorityQueue<CostNode> pq_;  //PQ for A*
 
 	public SmartCarBrain () {
 		pathOn_ = false;
 		goal_ = null;
+		target_ = -1;
 		pq_ = new PriorityQueue<CostNode>();
 	}
 
@@ -59,6 +56,7 @@ public class SmartCarBrain implements Brain {
 
 		// TODO: implement this
 		if (!pathOn_) {
+			System.out.println("debugging on");
 			pathOn_ = true;
 			graph_.debug();
 		}
@@ -96,29 +94,30 @@ public class SmartCarBrain implements Brain {
 			 * if we have not made it yet,
 			 * check neighbors. if a neighbor is in the lane we're trying to change to, abort.
 			 */
+			
+			
 
-
-			if (car.getLane() == car.getTargetLane()) { //if true, want to complete lane change until in middle of lane.
+			if (car.getLane() == getTargetLane()) { //if true, want to complete lane change until in middle of lane.
 
 				car.setSignal(Signal.NONE);
-				car.setTargetLane(-1);
+				 setTargetLane(-1);
 				System.out.println("lane change complete");
 				
 			}
 			else { //must check neighbors to see if we need to abort the lane change.
 				for (Car other : world.getNeighbors(car)) {
-					if (other.getLane() == car.getTargetLane()) {
+					if (other.getLane() == getTargetLane()) {
 						System.out.println("danger! aborting lane change");
 						car.setSignal(Signal.NONE);
-						car.setTargetLane(-1);
+						 setTargetLane(-1);
 						//						TrackLane abort = new TrackLane(150);
 						//						return abort.getSteeringForce(car,world);
 						break;
 					}
 				}
-				if (car.getTargetLane() != -1) {
+				if ( getTargetLane() != -1) {
 					System.out.println("continuing lane change");
-					ChangeLanes changelanes = new ChangeLanes(100,car.getTargetLane()); //continue the lane change
+					ChangeLanes changelanes = new ChangeLanes(100,getTargetLane()); //continue the lane change
 					return changelanes.getSteeringForce(car,world);
 				}			
 			}
@@ -165,7 +164,7 @@ public class SmartCarBrain implements Brain {
 					}		
 					System.out.println("making lane change");
 					car.setBraking(false);
-					car.setTargetLane(target);
+					setTargetLane(target);
 					return changelanes.getSteeringForce(car,world);
 				}
 			}
@@ -212,6 +211,25 @@ public class SmartCarBrain implements Brain {
 	 */
 	public void initGraph(World world, Car car) {
 		graph_ = new DynamicPathfinderGraph(car,world,goal_);
+	}
+	
+	/**
+	 * Get the int value of the lane we're changing into
+	 * 
+	 * @return int value of the lane we're going to
+	 */
+	public int getTargetLane() {
+		return target_;
+	}
+	
+	/**
+	 * Set the target lane of the car.
+	 * 
+	 * @param target
+	 * 			new value for target_
+	 */
+	public void setTargetLane(int target) {
+		target_ = target;
 	}
 
 	private void debugPath ( List<RoadGraphNode> path, World world ) {

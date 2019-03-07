@@ -60,5 +60,9 @@ public class CostNode implements Comparable<CostNode> {
 	public long getCost() {
 		return cost_;
 	}
+	
+	public RoadGraphNode getGraphNode() {
+		return node_;
+	}
 
 }

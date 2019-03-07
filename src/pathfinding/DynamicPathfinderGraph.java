@@ -194,11 +194,11 @@ public class DynamicPathfinderGraph extends PathfinderGraph {
 				RoadGraphNode unsafe = new RoadGraphNode(road,p,time + t);
 				targets.add(unsafe);
 				world_.debugPoint(World.DEBUG_GRAPHGEN,unsafe.getPosition(),
-				                  world_.getApplet().color(255,0,0),8);
+				                  world_.getApplet().color(255,0,0),12);
 				world_.debugPoint(World.DEBUG_GRAPHGEN,
 				                  road.getLaneChangeTarget(unsafe.getPosition(),newlane,
 				                                           Car.LANE_CHANGE_ANGLE),
-				                  world_.getApplet().color(255,0,0),6);
+				                  world_.getApplet().color(0,255,0),12);
 			}
 
 			if ( road.compareTo(p,pb) <= 0 ) {
