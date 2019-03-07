@@ -26,31 +26,26 @@ import processing.core.PVector;
  */
 public class SmartCarBrain implements Brain {
 
-	private Goal goal_; //where we're trying to get to. Used with heuristic evaluation.
+	private Goal goal_; // where we're trying to get to. Used with heuristic
+	                    // evaluation.
 
-	private DynamicPathfinderGraph graph_; //to be used with A*.
-	private ArrayList<RoadGraphNode> path_; //used to track our path.
+	private DynamicPathfinderGraph graph_; // to be used with A*.
+	private ArrayList<RoadGraphNode> path_; // used to track our path.
 
-	private boolean pathOn_; //flag for path debugging
+	private boolean pathOn_; // flag for path debugging
 
-	private int target_; //target for lane change; -1 if none.
+	private int target_; // target for lane change; -1 if none.
 
-	private Behavior lanechange_; //null if not currently changing lanes
-	private State state_; //current state of the smart car
+	private Behavior lanechange_; // null if not currently changing lanes
+	private State state_; // current state of the smart car
 
-	private long start_; //start time of the pathfinding
-
+	private long start_; // start time of the pathfinding
 
 	/*
-	 * States:
-	 * 	-Braking
-	 * 
-	 *  -ChangingLanes
-	 *  
-	 *  -Fwd
+	 * States: -Braking -ChangingLanes -Fwd
 	 */
 
-	private PriorityQueue<CostNode> pq_;  //PQ for A*
+	private PriorityQueue<CostNode> pq_; // PQ for A*
 
 	public SmartCarBrain () {
 		pathOn_ = false;
@@ -63,40 +58,43 @@ public class SmartCarBrain implements Brain {
 
 	public PVector getNetSteeringForce ( Car car, World world ) {
 
-		if (start_ == -1) { //start the pathfinding
+		if ( start_ == -1 ) { // start the pathfinding
 			start_ = System.nanoTime();
 		}
 
-		//generate next nodes if not in base state
-		if (state_ != State.Fwd_MaxSpeed) {
+		// generate next nodes if not in base state
+		if ( state_ != State.Fwd_MaxSpeed ) {
 			long elapsed = System.nanoTime() - getStartTime();
-			for (RoadGraphNode node: graph_.getNextLocations(new RoadGraphNode(car.getRoad(),
-			                                                                   car.getCenter(),System.nanoTime()))) {
-				
-				long etaNode = (long) ((PVector.sub(car.getCenter(),node.getPosition()).mag()) 
-						/ car.getMaxSpeed());		
-				long etaGoal = (long) ((PVector.sub(goal_.getPoint(),node.getPosition()).mag()) 
-						/ car.getMaxSpeed());			
+			for ( RoadGraphNode node : graph_
+			    .getNextLocations(new RoadGraphNode(car.getRoad(),car.getCenter(),
+			                                        System.nanoTime())) ) {
+
+				long etaNode =
+				    (long) ((PVector.sub(car.getCenter(),node.getPosition()).mag())
+				        / car.getMaxSpeed());
+				long etaGoal =
+				    (long) ((PVector.sub(goal_.getPoint(),node.getPosition()).mag())
+				        / car.getMaxSpeed());
 				long total = elapsed + etaNode + etaGoal;
 				pq_.add(new CostNode(node,total));
-			}	
+			}
 		}
 
 		Car ahead = null;
 		Behavior track = null;
 		PVector abort = null;
-
-		switch (state_) {
+		
+		switch ( state_ ) {
 		/*
-		 * in this state, we transition to Braking if Follow returns a 
-		 * non-zero magnitude
+		 * in this state, we transition to Braking if Follow returns a non-zero
+		 * magnitude
 		 */
 		case Fwd_MaxSpeed:
 			System.out.println("fwd");
 			ahead = world.getNextCarInLane(car.getRoad(),car.getFrontBumper());
 			if ( ahead != null ) {
 				PVector follow = (new Follow(ahead,world.getApplet().color(255,0,0)))
-						.getSteeringForce(car,world);
+				    .getSteeringForce(car,world);
 				if ( follow.mag() > 0 ) {
 					// flip a coin to decide which lane to change to - left or right
 					int carlane = car.getRoad().getLane(car.getCenter());
@@ -123,15 +121,14 @@ public class SmartCarBrain implements Brain {
 					if ( dir != Signal.NONE ) {
 						car.setSignal(dir);
 						lanechange_ =
-								new ChangeLanes(world.getApplet().color(255,0,255),target);
+						    new ChangeLanes(world.getApplet().color(255,0,255),target);
 						target_ = target;
 						state_ = State.ChangingLanes;
-					}
-					else {
+					} else {
 						state_ = State.Braking;
 					}
 					// brake to avoid the current imminent collision
-					car.setBraking(true);					
+					car.setBraking(true);
 					return follow;
 				}
 			}
@@ -142,9 +139,10 @@ public class SmartCarBrain implements Brain {
 		case Braking:
 			System.out.println("braking");
 			ahead = world.getNextCarInLane(car.getRoad(),car.getFrontBumper());
-			if ( ahead != null ) {
+			if ( ahead != null && PVector
+			    .dist(ahead.getRearBumper(),car.getFrontBumper()) < World.SPACING ) {
 				PVector follow = (new Follow(ahead,world.getApplet().color(255,0,0)))
-						.getSteeringForce(car,world);
+				    .getSteeringForce(car,world);
 				if ( follow.mag() > 0 ) {
 					// flip a coin to decide which lane to change to - left or right
 					int carlane = car.getRoad().getLane(car.getCenter());
@@ -171,15 +169,14 @@ public class SmartCarBrain implements Brain {
 					if ( dir != Signal.NONE ) {
 						car.setSignal(dir);
 						lanechange_ =
-								new ChangeLanes(world.getApplet().color(255,0,255),target);
+						    new ChangeLanes(world.getApplet().color(255,0,255),target);
 						target_ = target;
 						state_ = State.ChangingLanes;
-					}
-					else {
+					} else {
 						state_ = State.Braking;
 					}
 					// brake to avoid the current imminent collision
-					car.setBraking(true);					
+					car.setBraking(true);
 					return follow;
 				}
 			}
@@ -189,13 +186,12 @@ public class SmartCarBrain implements Brain {
 			track = new TrackLane(world.getApplet().color(255,0,225));
 			return track.getSteeringForce(car,world);
 
-
 		case ChangingLanes:
 			car.setBraking(false);
 			System.out.println("changing lanes");
-			if (car.getLane() != target_ && lanechange_ != null) {
-				for (Car other : world.getNeighbors(car)) {
-					if (other.getLane() == target_) {
+			if ( car.getLane() != target_ && lanechange_ != null ) {
+				for ( Car other : world.getNeighbors(car) ) {
+					if ( other.getLane() == target_ ) {
 
 						target_ = -1;
 						car.setSignal(Signal.NONE);
@@ -207,7 +203,7 @@ public class SmartCarBrain implements Brain {
 					}
 				}
 			}
-			if (lanechange_ != null) {
+			if ( lanechange_ != null ) {
 				PVector steer = lanechange_.getSteeringForce(car,world);
 				if ( car.getLane() != target_ ) { // changing lanes
 					return steer;
@@ -216,7 +212,7 @@ public class SmartCarBrain implements Brain {
 					lanechange_ = null;
 					target_ = -1;
 					state_ = State.Fwd_MaxSpeed;
-				}			
+				}
 			}
 			// not changing lanes or braking - drive forward in the current lane
 			track = new TrackLane(world.getApplet().color(255,0,225));
@@ -224,20 +220,22 @@ public class SmartCarBrain implements Brain {
 		case AbortingLaneChange:
 			System.out.println("aborting lane change");
 			track = new TrackLane(world.getApplet().color(255,0,225));
-			return track.getSteeringForce(car,world);
+			if ( track.getSteeringForce(car,world).mag() > 0 ) {
+				return track.getSteeringForce(car,world);
+			} else {
+				state_ = State.Fwd_MaxSpeed;
+			}
 		}
-		
-		
 
 		return new PVector(1,0);
 	}
 
 	/**
-	 * Setter for the goal.
-	 * Note that this value is set in Traffic's setup() method.
+	 * Setter for the goal. Note that this value is set in Traffic's setup()
+	 * method.
 	 * 
-	 * @param goal 
-	 * 			Goal of the smart car.
+	 * @param goal
+	 *          Goal of the smart car.
 	 */
 	public void setGoal ( Goal goal ) {
 		goal_ = goal;
@@ -245,12 +243,13 @@ public class SmartCarBrain implements Brain {
 
 	/**
 	 * Used to initialized the DynamicPathfinderGraph.
+	 * 
 	 * @param world
-	 * 			Our world
+	 *          Our world
 	 * @param car
-	 * 			The smart car
+	 *          The smart car
 	 */
-	public void initGraph(World world, Car car) {
+	public void initGraph ( World world, Car car ) {
 		graph_ = new DynamicPathfinderGraph(car,world,goal_);
 	}
 
@@ -259,7 +258,7 @@ public class SmartCarBrain implements Brain {
 	 * 
 	 * @return int value of the lane we're going to
 	 */
-	public int getTargetLane() {
+	public int getTargetLane () {
 		return target_;
 	}
 
@@ -267,33 +266,36 @@ public class SmartCarBrain implements Brain {
 	 * Set the target lane of the car.
 	 * 
 	 * @param target
-	 * 			new value for target_
+	 *          new value for target_
 	 */
-	public void setTargetLane(int target) {
+	public void setTargetLane ( int target ) {
 		target_ = target;
 	}
 
 	/**
 	 * Used to set the start time of a simulation.
+	 * 
 	 * @param start
-	 * 			start time, long
+	 *          start time, long
 	 */
-	public void setStartTime(long start) {
+	public void setStartTime ( long start ) {
 		start_ = start;
 	}
 
 	/**
 	 * Returns the simulation start time.
-	 * @return
-	 * 		start time of the simulation.
+	 * 
+	 * @return start time of the simulation.
 	 */
-	public long getStartTime() {
+	public long getStartTime () {
 		return start_;
 	}
 
 	private void debugPath ( List<RoadGraphNode> path, World world ) {
 
-		if ( !world.getDebug(World.DEBUG_GRAPH) ) { return; }
+		if ( !world.getDebug(World.DEBUG_GRAPH) ) {
+			return;
+		}
 
 		PApplet applet = world.getApplet();
 
@@ -301,7 +303,7 @@ public class SmartCarBrain implements Brain {
 		for ( int i = 0 ; i < path.size() - 1 ; i++ ) {
 			// System.out.println("drawing path "+path_.get(i));
 			PVector p1 = path.get(i).getPosition(),
-					p2 = path.get(i + 1).getPosition();
+			    p2 = path.get(i + 1).getPosition();
 			applet.stroke(0,255,255);
 			applet.fill(0,255,255);
 			applet.line(p1.x,p1.y,p2.x,p2.y);
