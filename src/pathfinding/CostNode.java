@@ -9,10 +9,17 @@ public class CostNode implements Comparable<CostNode> {
 	//associated RoadGraphNode
 	private RoadGraphNode node_; 
 	
+	private CostNode parent_;
+	
 	//cost it takes to get to this node.
 	private float cost_;
 	
-	public CostNode(RoadGraphNode node, float cost) {
+	public CostNode(RoadGraphNode node, CostNode parent, float cost) {
+		node_ = node;
+		cost_ = cost;
+		parent_ = parent;
+	}
+	public CostNode(RoadGraphNode node,float cost) {
 		node_ = node;
 		cost_ = cost;
 	}
@@ -59,6 +66,25 @@ public class CostNode implements Comparable<CostNode> {
 	 */
 	public float getCost() {
 		return cost_;
+	}
+	
+	/**
+	 * Setter for the parent of this CostNode
+	 * 
+	 * @param node
+	 * 		new parent of this node
+	 */
+	public void setParent(CostNode node) {
+		parent_ = node;
+	}
+	
+	/**
+	 * Getter for parent of this CostNode.
+	 * 
+	 * @return the parent node
+	 */
+	public CostNode getParent() {
+		return parent_;
 	}
 	
 	public RoadGraphNode getGraphNode() {
