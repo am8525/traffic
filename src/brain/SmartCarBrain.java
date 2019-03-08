@@ -58,6 +58,7 @@ public class SmartCarBrain implements Brain {
 		target_ = -1;
 		start_ = -1;
 		pq_ = new PriorityQueue<CostNode>();
+		past_ = new ArrayList<RoadGraphNode>();
 		state_ = State.Fwd_MaxSpeed;
 	}
 
@@ -227,24 +228,49 @@ public class SmartCarBrain implements Brain {
 			track = new TrackLane(world.getApplet().color(255,0,225));
 			return track.getSteeringForce(car,world);
 
-
+			/*
+			 * when we're in this state, we're in the middle of changing lanes.
+			 * 
+			 * we exit this state if:
+			 * 		-lane change is done,
+			 * 		OR
+			 * 		-lane change is aborted (unsafe)
+			 */
 		case ChangingLanes:
 			car.setBraking(false);
 			System.out.println("changing lanes");
+			
 			if (car.getLane() != target_ && lanechange_ != null) {
 				for (Car other : world.getNeighbors(car)) {
+					
+					/*
+					 * if this is true, must abandon the lane change and follow the car in front
+					 */
 					if (other.getLane() == target_) {
 
 						target_ = -1;
 						car.setSignal(Signal.NONE);
 						abort = new PVector(lanechange_.getSteeringForce(car,world).x,
 						                    -lanechange_.getSteeringForce(car,world).y);
-						state_ = State.AbortingLaneChange;
+						state_ = State.Fwd_MaxSpeed;
+						
+						//adding next set of potential nodes
+						this.addNextNodes(car);
+						
+						System.out.println("ABORTING");
+						
+						//adding our position to past path
+						past_.add(new RoadGraphNode(car.getRoad(),car.getCenter(),0));
+						
 						lanechange_ = null;
 						return abort;
 					}
 				}
 			}
+			
+			/*
+			 * continue with lane change.
+			 */
 			if (lanechange_ != null) {
 				PVector steer = lanechange_.getSteeringForce(car,world);
 				if ( car.getLane() != target_ ) { // changing lanes
@@ -254,11 +280,23 @@ public class SmartCarBrain implements Brain {
 					lanechange_ = null;
 					target_ = -1;
 					state_ = State.Fwd_MaxSpeed;
+					
+					//add position to past path
+					past_.add(new RoadGraphNode(car.getRoad(),car.getCenter(),0));
+					
+					//get next set of nodes to consider
+					this.addNextNodes(car);
 				}			
 			}
 			// not changing lanes or braking - drive forward in the current lane
 			track = new TrackLane(world.getApplet().color(255,0,225));
 			return track.getSteeringForce(car,world);
+			
+			/*
+			 * in the case that we're aborting a lane change,
+			 * 
+			 * 
+			 */
 		case AbortingLaneChange:
 			System.out.println("aborting lane change");
 			track = new TrackLane(world.getApplet().color(255,0,225));

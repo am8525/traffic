@@ -31,7 +31,8 @@ public class DynamicPathfinderGraph extends PathfinderGraph {
 	 * Generate the successor nodes for the specified node.
 	 * 
 	 * @param node
-	 *          current node
+	 *          center of the smart car
+	 *          
 	 * @return the successor nodes for the specified node
 	 */
 	@Override
