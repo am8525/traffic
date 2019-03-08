@@ -26,31 +26,27 @@ import processing.core.PVector;
  */
 public class SmartCarBrain implements Brain {
 
-	private Goal goal_; //where we're trying to get to. Used with heuristic evaluation.
+	private Goal goal_; // where we're trying to get to. Used with heuristic
+	// evaluation.
 
 	private DynamicPathfinderGraph graph_; //to be used with A*.
 	private ArrayList<RoadGraphNode> past_; //used to track where we've been.
 
+	private ArrayList<RoadGraphNode> path_; // used to track our path.
 
-	private boolean pathOn_; //flag for path debugging
+	private boolean pathOn_; // flag for path debugging
 
-	private int target_; //target for lane change; -1 if none.
+	private int target_; // target for lane change; -1 if none.
 
-	private Behavior lanechange_; //null if not currently changing lanes
-	private State state_; //current state of the smart car
+	private Behavior lanechange_; // null if not currently changing lanes
+	private State state_; // current state of the smart car
 
 	private float start_; //start time of the pathfinding
-
 	/*
-	 * States:
-	 * 	-Braking
-	 * 
-	 *  -ChangingLanes
-	 *  
-	 *  -Fwd
+	 * States: -Braking -ChangingLanes -Fwd
 	 */
 
-	private PriorityQueue<CostNode> pq_;  //PQ for A*
+	private PriorityQueue<CostNode> pq_; // PQ for A*
 
 	public SmartCarBrain () {
 		pathOn_ = false;
@@ -64,24 +60,18 @@ public class SmartCarBrain implements Brain {
 
 	public PVector getNetSteeringForce ( Car car, World world ) {
 
-		if (start_ == -1) { //start the pathfinding, and add start position to path.
-			start_ = System.nanoTime();
-			
-		}
-
-		//generate next nodes if not in base state
-		if (state_ != State.Fwd_MaxSpeed) {	
-			addNextNodes(car);
+		if ( start_ == -1 ) { // start the pathfinding
+			start_ = System.nanoTime();			
 		}
 
 		Car ahead = null;
 		Behavior track = null;
 		PVector abort = null;
 
-		switch (state_) {
+		switch ( state_ ) {
 		/*
-		 * in this state, we transition to Braking if Follow returns a 
-		 * non-zero magnitude
+		 * in this state, we transition to Braking if Follow returns a non-zero
+		 * magnitude
 		 */
 		case Fwd_MaxSpeed:
 			System.out.println("fwd");
@@ -89,17 +79,18 @@ public class SmartCarBrain implements Brain {
 			if ( ahead != null ) {
 				PVector follow = (new Follow(ahead,world.getApplet().color(255,0,0)))
 						.getSteeringForce(car,world);
-				
+
 				//looking to change lanes; generate some nodes.
+
 				if ( follow.mag() > 0 ) {
-				
+
 					addNextNodes(car);
-					
+
 					RoadGraphNode best = pq_.remove().getGraphNode();
-					
+
 					int target = car.getRoad().getLane(best.getPosition());				
 					int currLane = car.getRoad().getLane(car.getCenter());
-					
+
 					Signal dir = Signal.NONE;
 					if (target < currLane || currLane == car.getRoad().getNumLanes() - 1) {
 						dir = Signal.LEFT;
@@ -126,22 +117,24 @@ public class SmartCarBrain implements Brain {
 								new ChangeLanes(world.getApplet().color(255,0,255),target);
 						target_ = target;
 						state_ = State.ChangingLanes;
-						
+
 						//add next set of nodes.
 						addNextNodes(car);
-						
+
 						//track where we're leaving from.
 						past_.add(new RoadGraphNode(car.getRoad(),car.getCenter(),0));
-						
+
 					}
 					else {
 						//before leaving this state, generate next nodes.
 						addNextNodes(car);
+
 						state_ = State.Braking;
+
+						// brake to avoid the current imminent collision
+						car.setBraking(true);
+						return follow;
 					}
-					// brake to avoid the current imminent collision
-					car.setBraking(true);					
-					return follow;
 				}
 			}
 			// not changing lanes or braking - drive forward in the current lane
@@ -153,81 +146,75 @@ public class SmartCarBrain implements Brain {
 			 * 
 			 */
 		case Braking:
-			
+
 			System.out.println("braking");
 			ahead = world.getNextCarInLane(car.getRoad(),car.getFrontBumper());
-			if ( ahead != null ) {
+
+			if ( ahead != null && PVector
+					.dist(ahead.getRearBumper(),car.getFrontBumper()) < World.SPACING ) {
 				PVector follow = (new Follow(ahead,world.getApplet().color(255,0,0)))
 						.getSteeringForce(car,world);
-				
+
 				float distToCarAhead = PVector.dist(ahead.getCenter(),car.getCenter());
-				
+
 				/*
 				 * if the distance to car ahead is less than twice our neighbor radius,
 				 * we try changing lanes. else, go forward.
 				 */
 				if ( distToCarAhead < 2*car.getNeighborRadius() ) {
-					
+
 					if (pq_.isEmpty()) {
 						this.addNextNodes(car);
 					}
-					RoadGraphNode best = pq_.remove().getGraphNode();
-					
-					int target = car.getRoad().getLane(best.getPosition());			
-					int carlane = car.getRoad().getLane(car.getCenter());
 					Signal dir = Signal.NONE;
-					
-					if (target < carlane || carlane == car.getRoad().getNumLanes() - 1) {
-						dir = Signal.LEFT;
-					}
-					else if (target > carlane || carlane == 0) {
-						dir = Signal.RIGHT;
-					}
-					
-					// is the lane open? based on neighborhood - the car may have blind
-					// spots!
-					for ( Car neighbor : world.getNeighbors(car) ) {
-						if ( neighbor.getLane() == target ) {
-							// car in the way of lane change; abandon lane change
-							dir = Signal.NONE;
-							target = -1;
-							lanechange_ = null;
-							break;
-						}
-					}
-					// set up lane change if that's still the intent
-					if ( dir != Signal.NONE ) {
-						car.setSignal(dir);
-						lanechange_ =
-								new ChangeLanes(world.getApplet().color(255,0,255),target);
-						target_ = target;
-						state_ = State.ChangingLanes;
-						
-						//add next nodes to PQ before leaving this tate
-						this.addNextNodes(car);
-						
-						//track where we've been
-						past_.add(new RoadGraphNode(car.getRoad(),car.getCenter(),0));
-									
-					}
-					else {
-						state_ = State.Braking;
-					}
-					// brake to avoid the current imminent collision
-					car.setBraking(true);					
-					return follow;
-				}
-			}
-			car.setBraking(false);
-			state_ = State.Fwd_MaxSpeed;
-			
-			//changing state, gen next nodes
-			this.addNextNodes(car);
-			
-			// not changing lanes or braking - drive forward in the current lane
-			track = new TrackLane(world.getApplet().color(255,0,225));
-			return track.getSteeringForce(car,world);
+					RoadGraphNode best = pq_.remove().getGraphNode();
 
+					int target = car.getRoad().getLane(best.getPosition());			
+
+					if ( follow.mag() > 0 ) {
+
+						// is the lane open? based on neighborhood - the car may have blind
+						// spots!
+						for ( Car neighbor : world.getNeighbors(car) ) {
+							if ( neighbor.getLane() == target ) {
+								// car in the way of lane change; abandon lane change
+								dir = Signal.NONE;
+								target = -1;
+								lanechange_ = null;
+								break;
+							}
+						}
+						// set up lane change if that's still the intent
+						if ( dir != Signal.NONE ) {
+							car.setSignal(dir);
+							lanechange_ =
+									new ChangeLanes(world.getApplet().color(255,0,255),target);
+							target_ = target;
+							state_ = State.ChangingLanes;
+
+							//add next nodes to PQ before leaving this tate
+							this.addNextNodes(car);
+
+							//track where we've been
+							past_.add(new RoadGraphNode(car.getRoad(),car.getCenter(),0));
+
+						}
+
+						// brake to avoid the current imminent collision
+						car.setBraking(true);
+						return follow;
+					}
+				}
+				car.setBraking(false);
+				state_ = State.Fwd_MaxSpeed;
+
+				//changing state, gen next nodes
+				this.addNextNodes(car);
+
+				// not changing lanes or braking - drive forward in the current lane
+				track = new TrackLane(world.getApplet().color(255,0,225));
+				return track.getSteeringForce(car,world);
+			}
 			/*
 			 * when we're in this state, we're in the middle of changing lanes.
 			 * 
@@ -236,42 +223,44 @@ public class SmartCarBrain implements Brain {
 			 * 		OR
 			 * 		-lane change is aborted (unsafe)
 			 */
+
 		case ChangingLanes:
 			car.setBraking(false);
 			System.out.println("changing lanes");
-			
-			if (car.getLane() != target_ && lanechange_ != null) {
-				for (Car other : world.getNeighbors(car)) {
-					
-					/*
-					 * if this is true, must abandon the lane change and follow the car in front
-					 */
-					if (other.getLane() == target_) {
+
+			/*
+			 * if this is true, must abandon the lane change and follow the car in front
+			 */
+
+			if ( car.getLane() != target_ && lanechange_ != null ) {
+				for ( Car other : world.getNeighbors(car) ) {
+					if ( other.getLane() == target_ ) {
 
 						target_ = -1;
 						car.setSignal(Signal.NONE);
 						abort = new PVector(lanechange_.getSteeringForce(car,world).x,
 						                    -lanechange_.getSteeringForce(car,world).y);
 						state_ = State.Fwd_MaxSpeed;
-						
+
 						//adding next set of potential nodes
 						this.addNextNodes(car);
-						
+
 						System.out.println("ABORTING");
-						
+
 						//adding our position to past path
 						past_.add(new RoadGraphNode(car.getRoad(),car.getCenter(),0));
-						
+
 						lanechange_ = null;
 						return abort;
 					}
 				}
 			}
-			
+
 			/*
 			 * continue with lane change.
 			 */
-			if (lanechange_ != null) {
+			if ( lanechange_ != null ) {
+
 				PVector steer = lanechange_.getSteeringForce(car,world);
 				if ( car.getLane() != target_ ) { // changing lanes
 					return steer;
@@ -280,129 +269,144 @@ public class SmartCarBrain implements Brain {
 					lanechange_ = null;
 					target_ = -1;
 					state_ = State.Fwd_MaxSpeed;
-					
+
+
 					//add position to past path
 					past_.add(new RoadGraphNode(car.getRoad(),car.getCenter(),0));
-					
+
 					//get next set of nodes to consider
 					this.addNextNodes(car);
 				}			
+
 			}
+
+
 			// not changing lanes or braking - drive forward in the current lane
 			track = new TrackLane(world.getApplet().color(255,0,225));
 			return track.getSteeringForce(car,world);
 			
+			
+		default:
+			return new PVector(1,0);
+		}
+	}
+
 			/*
 			 * in the case that we're aborting a lane change,
 			 * 
 			 * 
 			 */
-		case AbortingLaneChange:
-			System.out.println("aborting lane change");
-			track = new TrackLane(world.getApplet().color(255,0,225));
-			return track.getSteeringForce(car,world);
-		}
-
-
-
-		return new PVector(1,0);
-	}
-
-	/**
-	 * Setter for the goal.
-	 * Note that this value is set in Traffic's setup() method.
-	 * 
-	 * @param goal 
-	 * 			Goal of the smart car.
-	 */
-	public void setGoal ( Goal goal ) {
-		goal_ = goal;
-	}
-
-	/**
-	 * Used to initialized the DynamicPathfinderGraph.
-	 * @param world
-	 * 			Our world
-	 * @param car
-	 * 			The smart car
-	 */
-	public void initGraph(World world, Car car) {
-		graph_ = new DynamicPathfinderGraph(car,world,goal_);
-	}
-
-	/**
-	 * Get the int value of the lane we're changing into
-	 * 
-	 * @return int value of the lane we're going to
-	 */
-	public int getTargetLane() {
-		return target_;
-	}
-
-	/**
-	 * Set the target lane of the car.
-	 * 
-	 * @param target
-	 * 			new value for target_
-	 */
-	public void setTargetLane(int target) {
-		target_ = target;
-	}
-
-	/**
-	 * Used to set the start time of a simulation.
-	 * @param start
-	 * 			start time, long
-	 */
-	public void setStartTime(long start) {
-		start_ = start;
-	}
-
-	/**
-	 * Returns the simulation start time.
-	 * @return
-	 * 		start time of the simulation.
-	 */
-	public float getStartTime() {
-		return start_;
-	}
-	
-	/**
-	 * This method adds the next set of RoadGraphNodes to our PQ.
-	 * 
-	 * @param car
-	 * 		the smart car
-	 */
-	public void addNextNodes(Car car) {
-		float elapsed = System.nanoTime() - getStartTime();
+//		case AbortingLaneChange:
+//			System.out.println("aborting lane change");
+//			track = new TrackLane(world.getApplet().color(255,0,225));
+//			if ( track.getSteeringForce(car,world).mag() > 0 ) {
+//				return track.getSteeringForce(car,world);
+//			} else {
+//				state_ = State.Fwd_MaxSpeed;
+//			}
+//
+//			return new PVector(1,0);
 		
-		//note that the cost of the node we feed in is 0, as it is our current position.
-		for (RoadGraphNode node: graph_.getNextLocations(new RoadGraphNode(car.getRoad(),
-		                                                                   car.getCenter(),0))) {
-		
-			float etaGoal = ((PVector.sub(goal_.getPoint(),node.getPosition()).mag())
-					/ car.getMaxSpeed());			
-			float total = elapsed + node.getTime() + etaGoal;
-			pq_.add(new CostNode(node,total));
+
+		/**
+		 * Setter for the goal. Note that this value is set in Traffic's setup()
+		 * method.
+		 * 
+		 * @param goal
+		 *          Goal of the smart car.
+		 */
+		public void setGoal ( Goal goal ) {
+			goal_ = goal;
 		}
-	}
 
-	private void debugPath ( List<RoadGraphNode> path, World world ) {
-
-		if ( !world.getDebug(World.DEBUG_GRAPH) ) { return; }
-
-		PApplet applet = world.getApplet();
-
-		applet.ellipseMode(PApplet.CENTER);
-		for ( int i = 0 ; i < path.size() - 1 ; i++ ) {
-			// System.out.println("drawing path "+path_.get(i));
-			PVector p1 = path.get(i).getPosition(),
-					p2 = path.get(i + 1).getPosition();
-			applet.stroke(0,255,255);
-			applet.fill(0,255,255);
-			applet.line(p1.x,p1.y,p2.x,p2.y);
-			applet.ellipse(p2.x,p2.y,10,10);
+		/**
+		 * Used to initialized the DynamicPathfinderGraph.
+		 * 
+		 * @param world
+		 *          Our world
+		 * @param car
+		 *          The smart car
+		 */
+		public void initGraph ( World world, Car car ) {
+			graph_ = new DynamicPathfinderGraph(car,world,goal_);
 		}
-	}
 
-}
+		/**
+		 * Get the int value of the lane we're changing into
+		 * 
+		 * @return int value of the lane we're going to
+		 */
+		public int getTargetLane () {
+			return target_;
+		}
+
+		/**
+		 * Set the target lane of the car.
+		 * 
+		 * @param target
+		 *          new value for target_
+		 */
+		public void setTargetLane ( int target ) {
+			target_ = target;
+		}
+
+		/**
+		 * Used to set the start time of a simulation.
+		 * 
+		 * @param start
+		 *          start time, long
+		 */
+		public void setStartTime ( long start ) {
+			start_ = start;
+		}
+
+		/**
+		 * Returns the simulation start time.
+		 * 
+		 * @return start time of the simulation.
+		 */
+		public float getStartTime() {
+			return start_;
+		}
+
+		/**
+		 * This method adds the next set of RoadGraphNodes to our PQ.
+		 * 
+		 * @param car
+		 * 		the smart car
+		 */
+		public void addNextNodes(Car car) {
+			float elapsed = System.nanoTime() - getStartTime();
+
+			//note that the cost of the node we feed in is 0, as it is our current position.
+			for (RoadGraphNode node: graph_.getNextLocations(new RoadGraphNode(car.getRoad(),
+			                                                                   car.getCenter(),0))) {
+
+				float etaGoal = ((PVector.sub(goal_.getPoint(),node.getPosition()).mag())
+						/ car.getMaxSpeed());			
+				float total = elapsed + node.getTime() + etaGoal;
+				pq_.add(new CostNode(node,total));
+			}
+		}
+
+		private void debugPath ( List<RoadGraphNode> path, World world ) {
+
+			if ( !world.getDebug(World.DEBUG_GRAPH) ) {
+				return;
+			}
+
+			PApplet applet = world.getApplet();
+
+			applet.ellipseMode(PApplet.CENTER);
+			for ( int i = 0 ; i < path.size() - 1 ; i++ ) {
+				// System.out.println("drawing path "+path_.get(i));
+				PVector p1 = path.get(i).getPosition(),
+						p2 = path.get(i + 1).getPosition();
+				applet.stroke(0,255,255);
+				applet.fill(0,255,255);
+				applet.line(p1.x,p1.y,p2.x,p2.y);
+				applet.ellipse(p2.x,p2.y,10,10);
+			}
+		}
+
+	}
