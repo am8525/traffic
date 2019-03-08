@@ -1,5 +1,7 @@
 package pathfinding;
 
+import processing.core.PVector;
+
 /**
  * @author ajm
  *
