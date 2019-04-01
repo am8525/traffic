@@ -1,11 +1,11 @@
-Overview
+Overview:
 
 In the program Traffic, we get a bird’s eye view of a five-lane highway in the middle of downtown Los Angeles in the year 2050. All the cars all self-driving, some smarter than others. The pink cars are satisfied with cruising along, the blue cars are in a constant state of rush, and the sole yellow car is the smartest of the bunch. Of course, the brains and decision-making behind the yellow car’s driving is what this program is all about.
 The objective of the program is for our smart car, beginning from the far left of the screen in the middle lane, to traverse the road and reach the goal at the opposite side of that same lane as fast as possible. The car may change lanes, speed up, and slow down as it may in order to get to the goal as efficiently as it can.
 User Goals
 Observe the smart car work it’s decision-making magic!
 
-Features
+Features:
 
 Near-Optimal Pathfinding
 Road/Path Traversal
@@ -13,4 +13,9 @@ Behavioral Indications: Brake Lights, Turn Signals
 Danger Detection
 Reactive Braking
 Safe Lane Changes
+
+Bugs: 
+
+Program freezes at start if no path to goal exists
+Path re-trace draws a web, not a line
 
