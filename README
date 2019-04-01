@@ -1,28 +1,16 @@
-Design Decisions:
--DynamicPathfinderGraph is favored over StaticPathfinderGraph, as when we are making
-a decision as to what our car needs to do, we need to care about where cars will be next,
-not where they are when we do our calculation. This gives our car some sense of predictability
-of where other cars will be in a time step.
+Overview
 
--DynamicPathfinderGraph is placed as a private instance variable in SmartCarBrain, as SmartCarBrain
-will really be the only class using the graph. Our brain will be the one making decisions, so 
-it makes sense for it to have direct access to the graph. Other classes don't care about the graph
+In the program Traffic, we get a bird’s eye view of a five-lane highway in the middle of downtown Los Angeles in the year 2050. All the cars all self-driving, some smarter than others. The pink cars are satisfied with cruising along, the blue cars are in a constant state of rush, and the sole yellow car is the smartest of the bunch. Of course, the brains and decision-making behind the yellow car’s driving is what this program is all about.
+The objective of the program is for our smart car, beginning from the far left of the screen in the middle lane, to traverse the road and reach the goal at the opposite side of that same lane as fast as possible. The car may change lanes, speed up, and slow down as it may in order to get to the goal as efficiently as it can.
+User Goals
+Observe the smart car work it’s decision-making magic!
 
+Features
 
+Near-Optimal Pathfinding
+Road/Path Traversal
+Behavioral Indications: Brake Lights, Turn Signals 
+Danger Detection
+Reactive Braking
+Safe Lane Changes
 
-
-for a given timestep, when getNextLocations is called, it returns up to 5 nodes:
-1 boundary, 2 lane changes, and 2 opportunities.
-
-getNextLocations should be called when Follow returns non-zero (aka enter 'Braking')
-for each node:
-	if node is in different lane (lane change node),
-		are any neighbors in that lane? If so, continue.
-		if no neighbors in that lane, take it.
-	
-	if node is in same lane (boundary or opportunity node),
-		determine position to start braking for car ahead.
-		
-TODO:
-	-implement lane changing so it takes the lane change node that 
-	is heuristically best
